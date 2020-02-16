@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright 2018 Google LLC
 #
@@ -16,19 +16,15 @@
 
 from __future__ import division
 
-import time
 import re
-import sys
 
 from google.cloud import speech
 
+# Audio recording parameters
+import time
+
 import pyaudio
 from six.moves import queue
-
-# Audio recording parameters
-STREAMING_LIMIT = 290000
-SAMPLE_RATE = 16000
-CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
 
 
 def get_current_time():
@@ -41,6 +37,7 @@ def duration_to_secs(duration):
 
 class ResumableMicrophoneStream:
     """Opens a recording stream as a generator yielding the audio chunks."""
+
     def __init__(self, rate, chunk_size):
         self._rate = rate
         self._chunk_size = chunk_size
@@ -118,93 +115,109 @@ class ResumableMicrophoneStream:
             yield b''.join(data)
 
 
-def listen_print_loop(responses, stream):
-    """Iterates through server responses and prints them.
-
-    The responses passed is a generator that will block until a response
-    is provided by the server.
-
-    Each response may contain multiple results, and each result may contain
-    multiple alternatives; for details, see https://goo.gl/tjCPAU.  Here we
-    print only the transcription for the top alternative of the top result.
-
-    In this case, responses are provided for interim results as well. If the
-    response is an interim one, print a line feed at the end of it, to allow
-    the next result to overwrite it, until the response is a final one. For the
-    final one, print a newline to preserve the finalized transcription.
-    """
-    responses = (r for r in responses if (
-            r.results and r.results[0].alternatives))
-
-    num_chars_printed = 0
-    for response in responses:
-        if not response.results:
-            continue
-
-        # The `results` list is consecutive. For streaming, we only care about
-        # the first result being considered, since once it's `is_final`, it
-        # moves on to considering the next utterance.
-        result = response.results[0]
-        if not result.alternatives:
-            continue
-
-        # Display the transcription of the top alternative.
-        top_alternative = result.alternatives[0]
-        transcript = top_alternative.transcript
-
-        # Display interim results, but with a carriage return at the end of the
-        # line, so subsequent lines will overwrite them.
-        #
-        # If the previous result was longer than this one, we need to print
-        # some extra spaces to overwrite the previous result
-        overwrite_chars = ' ' * (num_chars_printed - len(transcript))
-
-        if not result.is_final:
-            sys.stdout.write(transcript + overwrite_chars + '\r')
-            sys.stdout.flush()
-
-            num_chars_printed = len(transcript)
-        else:
-            print(transcript + overwrite_chars)
-
-            # Exit recognition if any of the transcribed phrases could be
-            # one of our keywords.
-            if re.search(r'\b(exit|quit)\b', transcript, re.I):
-                print('Exiting..')
-                stream.closed = True
-                break
-
-            num_chars_printed = 0
+STREAMING_LIMIT = 290000
+SAMPLE_RATE = 16000
+CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
 
 
-def main():
-    client = speech.SpeechClient()
-    config = speech.types.RecognitionConfig(
-        encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=SAMPLE_RATE,
-        language_code='en-US',
-        max_alternatives=1,
-        enable_word_time_offsets=True)
-    streaming_config = speech.types.StreamingRecognitionConfig(
-        config=config,
-        interim_results=True)
+class Transcrive:
+    def __init__(self):
+        self.client = speech.SpeechClient()
+        config = speech.types.RecognitionConfig(
+            encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
+            sample_rate_hertz=SAMPLE_RATE,
+            language_code='en-US',
+            max_alternatives=1,
+            enable_word_time_offsets=True)
+        self.streaming_config = speech.types.StreamingRecognitionConfig(
+            config=config,
+            interim_results=True)
 
-    mic_manager = ResumableMicrophoneStream(SAMPLE_RATE, CHUNK_SIZE)
+        self.mic_manager = ResumableMicrophoneStream(SAMPLE_RATE, CHUNK_SIZE)
 
-    print('Say "Quit" or "Exit" to terminate the program.')
+        self.current_transcript = []
 
-    with mic_manager as stream:
-        while not stream.closed:
-            audio_generator = stream.generator()
-            requests = (speech.types.StreamingRecognizeRequest(
-                audio_content=content)
-                for content in audio_generator)
+    def listen_print_loop(self, responses, stream):
+        """Iterates through server responses and prints them.
 
-            responses = client.streaming_recognize(streaming_config,
-                                                   requests)
-            # Now, put the transcription responses to use.
-            listen_print_loop(responses, stream)
+        The responses passed is a generator that will block until a response
+        is provided by the server.
+
+        Each response may contain multiple results, and each result may contain
+        multiple alternatives; for details, see https://goo.gl/tjCPAU.  Here we
+        print only the transcription for the top alternative of the top result.
+
+        In this case, responses are provided for interim results as well. If the
+        response is an interim one, print a line feed at the end of it, to allow
+        the next result to overwrite it, until the response is a final one. For the
+        final one, print a newline to preserve the finalized transcription.
+        """
+        responses = (r for r in responses if (
+                r.results and r.results[0].alternatives))
+
+        num_chars_printed = 0
+        for response in responses:
+            if not response.results:
+                continue
+
+            # The `results` list is consecutive. For streaming, we only care about
+            # the first result being considered, since once it's `is_final`, it
+            # moves on to considering the next utterance.
+            result = response.results[0]
+            if not result.alternatives:
+                continue
+
+            # Display the transcription of the top alternative.
+            top_alternative = result.alternatives[0]
+            transcript = top_alternative.transcript
+
+            # Display interim results, but with a carriage return at the end of the
+            # line, so subsequent lines will overwrite them.
+            #
+            # If the previous result was longer than this one, we need to print
+            # some extra spaces to overwrite the previous result
+            overwrite_chars = ' ' * (num_chars_printed - len(transcript))
+
+            if not result.is_final:
+                print(transcript + overwrite_chars, end='\r', flush=True)
+
+                num_chars_printed = len(transcript)
+            else:
+                ret: str = transcript + overwrite_chars
+                ret = ret.strip()
+                print(ret)
+
+                self.current_transcript.append(ret)
+
+                # Exit recognition if any of the transcribed phrases could be
+                # one of our keywords.
+                if re.search(r'\b(exit|quit)\b', transcript, re.I):
+                    print('Saving..')
+                    with open("output.txt", "w") as txt_file:
+                        for line in self.current_transcript:
+                            txt_file.write(line + "\n")
+                    stream.closed = True
+                    break
+
+                num_chars_printed = 0
+
+    def run_transcribe(self):
+
+        print('Say "Quit" or "Exit" to terminate the program.')
+
+        with self.mic_manager as stream:
+            while not stream.closed:
+                audio_generator = stream.generator()
+                requests = (speech.types.StreamingRecognizeRequest(
+                    audio_content=content)
+                    for content in audio_generator)
+
+                responses = self.client.streaming_recognize(self.streaming_config,
+                                                            requests)
+                # Now, put the transcription responses to use.
+                self.listen_print_loop(responses, stream)
 
 
 if __name__ == '__main__':
-    main()
+    print("test")
+    # run_transcribe()
