@@ -16,14 +16,16 @@
 
 from __future__ import division
 
+import os
+import pathlib
 import re
-
-from google.cloud import speech
-
+import threading
 # Audio recording parameters
 import time
 
 import pyaudio
+from google.cloud import speech
+from pynput.keyboard import Key, Listener
 from six.moves import queue
 
 
@@ -135,7 +137,8 @@ class Transcrive:
 
         self.mic_manager = ResumableMicrophoneStream(SAMPLE_RATE, CHUNK_SIZE)
 
-        self.current_transcript = []
+        self.current_slide = 0
+        self.should_close = False
 
     def listen_print_loop(self, responses, stream):
         """Iterates through server responses and prints them.
@@ -178,32 +181,67 @@ class Transcrive:
             # some extra spaces to overwrite the previous result
             overwrite_chars = ' ' * (num_chars_printed - len(transcript))
 
+            ret: str = transcript + overwrite_chars
+            ret = ret.strip()
+
             if not result.is_final:
-                print(transcript + overwrite_chars, end='\r', flush=True)
+                print(ret, end='\r', flush=True)
 
                 num_chars_printed = len(transcript)
             else:
-                ret: str = transcript + overwrite_chars
-                ret = ret.strip()
+
                 print(ret)
 
-                self.current_transcript.append(ret)
+                self._update_to_log(ret)
 
                 # Exit recognition if any of the transcribed phrases could be
                 # one of our keywords.
-                if re.search(r'\b(exit|quit)\b', transcript, re.I):
-                    print('Saving..')
-                    with open("output.txt", "w") as txt_file:
-                        for line in self.current_transcript:
-                            txt_file.write(line + "\n")
+                if re.search(r'\b(quit)\b', transcript, re.I):
                     stream.closed = True
+                    self._quit()
                     break
 
                 num_chars_printed = 0
 
+    def _quit(self):
+        os._exit(0)
+
+    def _update_to_log(self, line):
+        filename = str(self.current_slide) + ".txt"
+        parent_dir = str(pathlib.Path(__file__).parent.absolute())
+        with open(os.path.join(parent_dir, "output", str(filename)), "a") as txt_file:
+            txt_file.write(line + "\n")
+            txt_file.close()
+
+    def _save_log_to_file(self, filename):
+        print('Saving..')
+        filename = str(filename) + ".txt"
+        parent_dir = str(pathlib.Path(__file__).parent.absolute())
+        with open(os.path.join(parent_dir, "output", str(filename)), "w") as txt_file:
+            for line in self.current_transcript:
+                txt_file.write(line + "\n")
+
+    def on_press(self, key):
+        print('{0} pressed'.format(
+            key))
+        if key == Key.right:
+            self.current_slide += 1
+        elif key == Key.left:
+            self.current_slide -= 1
+        if key == Key.esc:
+            # Exit script
+            self._quit()
+            return False
+
+    def key_logger(self):
+        # Collect events until released
+        with Listener(
+                on_press=self.on_press) as listener:
+            listener.join()
+
     def run_transcribe(self):
 
-        print('Say "Quit" or "Exit" to terminate the program.')
+        print('Say "Quit" or press "Esc" to terminate the program.')
 
         with self.mic_manager as stream:
             while not stream.closed:
@@ -212,12 +250,12 @@ class Transcrive:
                     audio_content=content)
                     for content in audio_generator)
 
-                responses = self.client.streaming_recognize(self.streaming_config,
-                                                            requests)
+                responses = self.client.streaming_recognize(self.streaming_config, requests)
+
+                threading.Thread(name='keypress', target=self.key_logger).start()
                 # Now, put the transcription responses to use.
-                self.listen_print_loop(responses, stream)
+                threading.Thread(name='transcriber', target=self.listen_print_loop(responses, stream)).start()
 
 
 if __name__ == '__main__':
     print("test")
-    # run_transcribe()

@@ -7,38 +7,15 @@ import mysql.connector
 
 from transcrive.transcribe_script import Transcrive
 
-from pynput.keyboard import Key, Listener
 
-def on_press(key):
-    print('{0} pressed'.format(
-        key))
-    if key == Key.esc:
-        # Stop listener
-        return False
-
-def key_logger():
-    # Collect events until released
-    with Listener(
-            on_press=on_press) as listener:
-        listener.join()
 
 def main():
     path_to_auth = str(pathlib.Path(__file__).parent.absolute() / "auth.json")
 
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = path_to_auth
 
-
-
     transcriber = Transcrive()
-    threading.Thread(name='keypress', target=key_logger).start()
-    threading.Thread(name='transcriber', target=transcriber.run_transcribe()).start()
-
-
-
-
-
-
-
+    transcriber.run_transcribe()
 
 
 def sql():
