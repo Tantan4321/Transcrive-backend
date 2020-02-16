@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import os
 import pathlib
-import threading
 
 import mysql.connector
 
+from transcrive.PDFtoPNG import convert
 from transcrive.transcribe_script import Transcrive
 
 
@@ -13,6 +13,11 @@ def main():
     path_to_auth = str(pathlib.Path(__file__).parent.absolute() / "auth.json")
 
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = path_to_auth
+
+    # convert pdf to images
+    convert('test.pdf')
+
+
 
     transcriber = Transcrive()
     transcriber.run_transcribe()
