@@ -195,16 +195,15 @@ class Transcrive:
             else:
 
                 print(ret)
-
-                self.db_store["slides"][self.current_slide]["lines"].append(ret)
-                self._update_to_log()
-
                 # Exit recognition if any of the transcribed phrases could be
                 # one of our keywords.
                 if re.search(r'\b(quit)\b', transcript, re.I):
                     stream.closed = True
                     self._quit()
                     break
+
+                self.db_store["slides"][self.current_slide]["lines"].append(ret)
+                self._update_to_log()
 
                 num_chars_printed = 0
 
@@ -220,7 +219,6 @@ class Transcrive:
         # with open(os.path.join(parent_dir, "output", str(filename)), "w") as txt_file:
         #     txt_file.write(line + "\n")
         #     txt_file.close()
-
 
     def on_press(self, key):
         if key == Key.right:

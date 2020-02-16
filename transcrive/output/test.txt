@@ -1,0 +1,35 @@
+{
+    "isActive": false,
+    "slides": {
+        "0": {
+            "url": "placeholder",
+            "lines": [
+                "Society",
+                "Saudi live",
+                "yes",
+                "yesh",
+                "Josh"
+            ]
+        },
+        "1": {
+            "url": "placeholder",
+            "lines": [
+                "next slide",
+                "quick"
+            ]
+        },
+        "2": {
+            "url": "placeholder",
+            "lines": []
+        },
+        "3": {
+            "url": "placeholder",
+            "lines": []
+        },
+        "4": {
+            "url": "placeholder",
+            "lines": []
+        }
+    },
+    "current_slide": 1
+}
