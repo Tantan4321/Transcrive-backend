@@ -63,8 +63,9 @@ def main():
             this_slide = {"url": url, "lines": []}
             slides[slide_index] = this_slide
             slide_index += 1
+            os.remove(os.path.join(output_dir, file))
 
-    print(json_helper.dict_to_json(presentation_json))
+    # print(json_helper.dict_to_json(presentation_json))
 
     transcriber = Transcrive(pres_name, presentation_json)
     transcriber.run_transcribe()
