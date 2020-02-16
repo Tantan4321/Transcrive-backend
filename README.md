@@ -24,10 +24,6 @@ pip install PyAudio-0.2.11-cp38-cp38-win_amd64.whl
 pip install PyAudio-0.2.11-cp38-cp38-win32.whl
 ```
 
-> Set auth config
-```shell script
-set GOOGLE_APPLICATION_CREDENTIALS=[FILENAME].json
-```
 
 ## Usage Example
 

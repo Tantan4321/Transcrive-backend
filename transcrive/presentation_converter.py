@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
