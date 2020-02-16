@@ -49,6 +49,10 @@ def main():
     presentation_json = {"isActive": True, "presentationName": pres_name, "slides": {}, "current_slide": 0}
 
     output_dir = os.path.join(str(pathlib.Path(__file__).parent.absolute()), "output")
+    first_img = pres_name + ".jpg"
+    new_name = pres_name + "-0.jpg"
+    os.rename(os.path.join(output_dir, first_img), (os.path.join(output_dir, new_name)))
+
     cloudinary.config(
         cloud_name="transcrive",
         api_key="212465483262898",
