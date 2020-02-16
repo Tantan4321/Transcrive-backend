@@ -3,6 +3,7 @@
 from __future__ import division
 
 import os
+import pathlib
 import re
 import threading
 # Audio recording parameters
@@ -125,8 +126,19 @@ class Transcrive:
 
         self.mic_manager = ResumableMicrophoneStream(SAMPLE_RATE, CHUNK_SIZE)
 
+        self.filename = presentation_name + ".json"
         self.s3 = boto3.resource('s3')
-        self.pres_name = presentation_name
+        # self.s3.Bucket('transcrivebucket').put_object(Key="presentations.txt", Body="test.json")
+
+        self.s3.Bucket('transcrivebucket').download_file("presentations.txt", "temp.txt")
+        with open("temp.txt", "r+") as myfile:
+            for line in myfile:
+                if self.filename in line:
+                    break
+            else:  # not found, we are at the eof
+                myfile.write("\n" + self.filename)
+        self.s3.Bucket('transcrivebucket').put_object(Key="presentations.txt", Body=open('temp.txt', 'rb'))
+
         self.db_store = jsoned_db
         self.current_slide = 0
         self.should_close = False
@@ -200,10 +212,9 @@ class Transcrive:
         os._exit(0)
 
     def _update_to_log(self):
-        filename = self.pres_name + ".json"
         # parent_dir = str(pathlib.Path(__file__).parent.absolute())
         # json_helper.dict_to_json_file(self.db_store, os.path.join(parent_dir, "output", str(filename)))
-        self.s3.Bucket('transcrivebucket').put_object(Key=filename, Body=json_helper.dict_to_json(self.db_store))
+        self.s3.Bucket('transcrivebucket').put_object(Key=self.filename, Body=json_helper.dict_to_json(self.db_store))
 
     def on_press(self, key):
         if key == Key.right:

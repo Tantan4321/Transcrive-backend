@@ -46,7 +46,7 @@ def main():
     convert(path_to_presentation)
 
     pres_name = os.path.splitext(os.path.basename(path_to_presentation))[0]
-    presentation_json = {"isActive": True, "slides": {}, "current_slide": 0}
+    presentation_json = {"isActive": True, "presentationName": pres_name, "slides": {}, "current_slide": 0}
 
     output_dir = os.path.join(str(pathlib.Path(__file__).parent.absolute()), "output")
     cloudinary.config(

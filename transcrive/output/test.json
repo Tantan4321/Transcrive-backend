@@ -1,0 +1,36 @@
+{
+    "isActive": false,
+    "presentationName": "test",
+    "slides": {
+        "0": {
+            "url": "https://res.cloudinary.com/transcrive/image/upload/v1581848939/obugsfzbh8gqdxqxjjb7.jpg",
+            "lines": [
+                "test test testing 1 2 3"
+            ]
+        },
+        "1": {
+            "url": "https://res.cloudinary.com/transcrive/image/upload/v1581848940/jmlhhckedsnknv7fymvu.jpg",
+            "lines": []
+        },
+        "2": {
+            "url": "https://res.cloudinary.com/transcrive/image/upload/v1581848941/cbjxh943ghstypll4vpr.jpg",
+            "lines": [
+                "next next next",
+                "back"
+            ]
+        },
+        "3": {
+            "url": "https://res.cloudinary.com/transcrive/image/upload/v1581848942/sqkiofnosyo6ctsqxkig.jpg",
+            "lines": [
+                "next next next",
+                "next next",
+                "off"
+            ]
+        },
+        "4": {
+            "url": "https://res.cloudinary.com/transcrive/image/upload/v1581848943/kzjspjo55afmz0isbbjk.jpg",
+            "lines": []
+        }
+    },
+    "current_slide": 3
+}
