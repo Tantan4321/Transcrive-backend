@@ -2,11 +2,17 @@
 import os
 import pathlib
 
-import mysql.connector
+import cloudinary as cloudinary
+import cloudinary.uploader
 
+from transcrive import json_helper
 from transcrive.PDFtoPNG import convert
 from transcrive.transcribe_script import Transcrive
 
+
+def upload_image(path) -> str:
+    result = cloudinary.uploader.upload(path)
+    return result["secure_url"]
 
 
 def main():
@@ -17,28 +23,26 @@ def main():
     # convert pdf to images
     convert('test.pdf')
 
+    pres_name = "test"
+    presentation_json = {"isActive": True, "slides": {}, "current_slide": 0}
 
+    output_dir = os.path.join(str(pathlib.Path(__file__).parent.absolute()), "output")
+    cloudinary.config(
+        cloud_name="transcrive",
+        api_key="212465483262898",
+        api_secret="8hs2Ei7xBrbyx3SLJcdYpwz4Kmc"
+    )
 
-    transcriber = Transcrive()
+    slide_index = 0
+    slides: dict = presentation_json["slides"]
+    for file in os.listdir(output_dir):
+        if file.endswith(".jpg"):
+            url = "placeholder" # upload_image(os.path.join(output_dir, file))
+            this_slide = {"url": url, "lines": []}
+            slides[slide_index] = this_slide
+            slide_index += 1
+
+    print(json_helper.dict_to_json(presentation_json))
+
+    transcriber = Transcrive(pres_name, presentation_json)
     transcriber.run_transcribe()
-
-
-def sql():
-    # Open database connection
-    cnx = mysql.connector.connect(user='doadmin', password='g2o24tvb377oiu3z',
-                                  host='transcrive-db-do-user-7124898-0.db.ondigitalocean.com',
-                                  database='defaultdb')
-    print("bruh")
-
-    # prepare a cursor object using cursor() method
-    cursor = cnx.cursor()
-
-    # execute SQL query using execute() method.
-    cursor.execute("SELECT VERSION()")
-
-    # Fetch a single row using fetchone() method.
-    data = cursor.fetchone()
-    print("Database version : %s " % data)
-
-    # disconnect from server
-    cnx.close()

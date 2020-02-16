@@ -28,6 +28,8 @@ from google.cloud import speech
 from pynput.keyboard import Key, Listener
 from six.moves import queue
 
+from transcrive import json_helper
+
 
 def get_current_time():
     return int(round(time.time() * 1000))
@@ -123,7 +125,7 @@ CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
 
 
 class Transcrive:
-    def __init__(self):
+    def __init__(self, presentation_name, jsoned_db: dict):
         self.client = speech.SpeechClient()
         config = speech.types.RecognitionConfig(
             encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
@@ -137,6 +139,8 @@ class Transcrive:
 
         self.mic_manager = ResumableMicrophoneStream(SAMPLE_RATE, CHUNK_SIZE)
 
+        self.pres_name = presentation_name
+        self.db_store = jsoned_db
         self.current_slide = 0
         self.should_close = False
 
@@ -192,7 +196,8 @@ class Transcrive:
 
                 print(ret)
 
-                self._update_to_log(ret)
+                self.db_store["slides"][self.current_slide]["lines"].append(ret)
+                self._update_to_log()
 
                 # Exit recognition if any of the transcribed phrases could be
                 # one of our keywords.
@@ -204,23 +209,28 @@ class Transcrive:
                 num_chars_printed = 0
 
     def _quit(self):
+        self.db_store["isActive"] = False
+        self._update_to_log()
         os._exit(0)
 
-    def _update_to_log(self, line):
-        filename = str(self.current_slide) + ".txt"
+    def _update_to_log(self):
+        filename = self.pres_name + ".txt"
         parent_dir = str(pathlib.Path(__file__).parent.absolute())
-        with open(os.path.join(parent_dir, "output", str(filename)), "a") as txt_file:
-            txt_file.write(line + "\n")
-            txt_file.close()
+        json_helper.dict_to_json_file(self.db_store, os.path.join(parent_dir, "output", str(filename)))
+        # with open(os.path.join(parent_dir, "output", str(filename)), "w") as txt_file:
+        #     txt_file.write(line + "\n")
+        #     txt_file.close()
 
 
     def on_press(self, key):
-        print('{0} pressed'.format(
-            key))
         if key == Key.right:
-            self.current_slide += 1
+            if not len(self.db_store["slides"]) - 1 == self.current_slide:
+                self.current_slide += 1
+                self.db_store["current_slide"] = self.current_slide
         elif key == Key.left:
-            self.current_slide -= 1
+            if not self.current_slide == 0:
+                self.current_slide -= 1
+                self.db_store["current_slide"] = self.current_slide
         if key == Key.esc:
             # Exit script
             self._quit()
