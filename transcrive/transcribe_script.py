@@ -213,13 +213,6 @@ class Transcrive:
             txt_file.write(line + "\n")
             txt_file.close()
 
-    def _save_log_to_file(self, filename):
-        print('Saving..')
-        filename = str(filename) + ".txt"
-        parent_dir = str(pathlib.Path(__file__).parent.absolute())
-        with open(os.path.join(parent_dir, "output", str(filename)), "w") as txt_file:
-            for line in self.current_transcript:
-                txt_file.write(line + "\n")
 
     def on_press(self, key):
         print('{0} pressed'.format(
