@@ -42,7 +42,6 @@ def main():
     if args.path:
         path_to_presentation = args.path
 
-
     # convert pdf to images
     convert(path_to_presentation)
 
@@ -59,8 +58,8 @@ def main():
     slide_index = 0
     slides: dict = presentation_json["slides"]
     for file in os.listdir(output_dir):
-        if file.endswith(".jpg"):  # TODO: remove placeholder
-            url = "placeholder"  # upload_image(os.path.join(output_dir, file))
+        if file.endswith(".jpg"):
+            url = upload_image(os.path.join(output_dir, file))
             this_slide = {"url": url, "lines": []}
             slides[slide_index] = this_slide
             slide_index += 1

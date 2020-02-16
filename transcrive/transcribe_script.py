@@ -1,28 +1,14 @@
 #!/usr/bin/env python3
 
-# Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from __future__ import division
 
 import os
-import pathlib
 import re
 import threading
 # Audio recording parameters
 import time
 
+import boto3
 import pyaudio
 from google.cloud import speech
 from pynput.keyboard import Key, Listener
@@ -139,6 +125,7 @@ class Transcrive:
 
         self.mic_manager = ResumableMicrophoneStream(SAMPLE_RATE, CHUNK_SIZE)
 
+        self.s3 = boto3.resource('s3')
         self.pres_name = presentation_name
         self.db_store = jsoned_db
         self.current_slide = 0
@@ -213,12 +200,10 @@ class Transcrive:
         os._exit(0)
 
     def _update_to_log(self):
-        filename = self.pres_name + ".txt"
-        parent_dir = str(pathlib.Path(__file__).parent.absolute())
-        json_helper.dict_to_json_file(self.db_store, os.path.join(parent_dir, "output", str(filename)))
-        # with open(os.path.join(parent_dir, "output", str(filename)), "w") as txt_file:
-        #     txt_file.write(line + "\n")
-        #     txt_file.close()
+        filename = self.pres_name + ".json"
+        # parent_dir = str(pathlib.Path(__file__).parent.absolute())
+        # json_helper.dict_to_json_file(self.db_store, os.path.join(parent_dir, "output", str(filename)))
+        self.s3.Bucket('transcrivebucket').put_object(Key=filename, Body=json_helper.dict_to_json(self.db_store))
 
     def on_press(self, key):
         if key == Key.right:
