@@ -128,7 +128,7 @@ class Transcrive:
 
         self.filename = presentation_name + ".json"
         self.s3 = boto3.resource('s3')
-        # self.s3.Bucket('transcrivebucket').put_object(Key="presentations.txt", Body="test.json")
+        # self.s3.Bucket('transcrivebucket').put_object(Key="presentations.txt", Body="test.json\ntranscrive.json")
 
         self.s3.Bucket('transcrivebucket').download_file("presentations.txt", "temp.txt")
         with open("temp.txt", "r+") as myfile:

@@ -1,4 +1,0 @@
-yes yes yes test
-do you want
-new line
-quit
